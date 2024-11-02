@@ -75,6 +75,8 @@ impl Chip8 {
     }
 }
 
+
+// Loads font set into memory
 impl Chip8 {
     fn load_fonts(&mut self) {
         for i in 0..FONTSET_SIZE {
@@ -82,6 +84,13 @@ impl Chip8 {
             let idx = i as usize;
             self.memory[fnt_addr + idx] = fontset[idx];
         }
+    }
+}
+
+impl Chip8 {
+    // 00E0 - Clears display
+    fn op_00e0(&mut self) {
+        self.video.fill(0);
     }
 }
 
