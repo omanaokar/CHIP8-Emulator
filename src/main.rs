@@ -88,9 +88,16 @@ impl Chip8 {
 }
 
 impl Chip8 {
-    // 00E0 - Clears display
+    // 00E0 - CLS: Clears display
     fn op_00e0(&mut self) {
         self.video.fill(0);
+    }
+
+    // 00EE - RET: Return from a subroutine
+    fn op_00ee(&mut self) {
+        self.sp -= 1;
+        let pc = self.pc as usize;
+        self.pc = self.stack[pc];
     }
 }
 
