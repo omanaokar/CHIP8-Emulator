@@ -146,6 +146,18 @@ impl Chip8 {
         }
     }
 
+    // 6xkk - LD Vx, byte: Interpreted puts value kk into register Vx
+    fn op_6xkk(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let byte = (self.opcode & 0x00FF) as u8;
+
+        let vx_idx = Vx as usize;
+
+        self.registers[vx_idx] = byte;
+    }
+
+
+
 }
 
 fn main() {
