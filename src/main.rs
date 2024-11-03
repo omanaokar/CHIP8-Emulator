@@ -24,7 +24,7 @@ const fontset: [u8; 80] =
 	0xE0, 0x90, 0x90, 0x90, 0xE0, // D
 	0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
 	0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-]
+];
 
 // Struct for CHIP8 structure
 struct Chip8 {
@@ -121,6 +121,27 @@ impl Chip8 {
         let byte = (self.opcode & 0x00FF) as u8;
         let vx_idx = Vx as usize;
         if self.registers[vx_idx] == byte {
+            self.pc += 2;
+        }
+    }
+
+    // 4xkk - SNE Vx, byte: Skip next instruction if Vx != kk
+    fn op_4xkk(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let byte = (self.opcode & 0x00FF) as u8;
+        let vx_idx = Vx as usize;
+        if self.registers[vx_idx] != byte {
+            self.pc += 2;
+        }
+    }
+
+    // 5xy0 - SE Vx, Vy: Skip next instruction if Vx = Vy
+    fn op_5xy0(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+        if self.registers[vx_idx] == self.registers[vy_idx] {
             self.pc += 2;
         }
     }
