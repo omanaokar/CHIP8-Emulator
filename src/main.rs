@@ -156,6 +156,15 @@ impl Chip8 {
         self.registers[vx_idx] = byte;
     }
 
+    // 7xkk - ADD Vx, byte: Set Vx = Vx + kk
+    fn op_7xkk(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let byte = (self.opcode & 0x00FF) as u8;
+
+        let vx_idx = Vx as usize;
+
+        self.registers[vx_idx] += byte;
+    }
 
 
 }
