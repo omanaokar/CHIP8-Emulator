@@ -99,6 +99,12 @@ impl Chip8 {
         let pc = self.pc as usize;
         self.pc = self.stack[pc];
     }
+
+    // 1nnn - JP: Jump to address nnn
+    fn op_1nnn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+        self.pc = address;
+    }
 }
 
 fn main() {
