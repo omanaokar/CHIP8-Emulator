@@ -166,6 +166,16 @@ impl Chip8 {
         self.registers[vx_idx] += byte;
     }
 
+    // 8xy0 - LD Vx, Vy: Set Vx = Vx + kk
+    fn op_8xy0(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        self.registers[vx_idx] = self.registers[vy_idx];       
+    }
 
 }
 
