@@ -100,11 +100,31 @@ impl Chip8 {
         self.pc = self.stack[pc];
     }
 
-    // 1nnn - JP: Jump to address nnn
+    // 1nnn - JP addr: Jump to address nnn
     fn op_1nnn(&mut self) {
         let address = self.opcode & 0x0FFF;
         self.pc = address;
     }
+
+    // 2nnn - CALL addr: Call subroutine at nnn
+    fn op_2nnn(&mut self) {
+        let sp = self.sp as usize;
+        self.stack[sp] = self.pc;
+        self.sp += 1;
+        let address = self.opcode & 0x0FFF;
+        self.pc = address;
+    }
+
+    // 3xkk - SE Vx, byte: Skip next instruction if Vx = kk
+    fn op_3xkk(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let byte = (self.opcode & 0x00FF) as u8;
+        let vx_idx = Vx as usize;
+        if self.registers[vx_idx] == byte {
+            self.pc += 2;
+        }
+    }
+
 }
 
 fn main() {
