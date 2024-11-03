@@ -177,6 +177,39 @@ impl Chip8 {
         self.registers[vx_idx] = self.registers[vy_idx];       
     }
 
+    // 8xy1 - OR Vx, Vy: Set Vx = Vx OR Vy
+    fn op_8xy1(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        self.registers[vx_idx] |= self.registers[vy_idx];       
+    }
+
+    // 8xy2 - AND Vx, Vy: Set Vx = Vx AND Vy
+    fn op_8xy2(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        self.registers[vx_idx] &= self.registers[vy_idx];       
+    }
+
+    // 8xy3 - XOR Vx, Vy: Set Vx = Vx XOR Vy
+    fn op_8xy3(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        self.registers[vx_idx] ^= self.registers[vy_idx];       
+    }
+
 }
 
 fn main() {
