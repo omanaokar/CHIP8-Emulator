@@ -6,6 +6,8 @@ use rand::Rng;
 const START_ADDRESS: u16 = 0x200;
 const FONTSET_START_ADDRESS: u8 = 0x50;
 const FONTSET_SIZE: u32 = 80;
+const VIDEO_WIDTH: u32 = 64;
+const VIDEO_HEIGHT: u32 = 32;
 
 const fontset: [u8; 80] = 
 [
@@ -321,6 +323,39 @@ impl Chip8 {
         self.registers[vx_idx] = rng.gen::<u8>() & byte;
     }
 
+    // Dxyn - DRW Vx, Vy, nibble: Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision
+    fn op_Dxyn(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+        let height = (self.opcode & 0x000F) as u8;
+
+        
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+
+        let xPos = self.registers[vx_idx] % (VIDEO_WIDTH as u8);
+        let yPos = self.registers[vy_idx] % (VIDEO_HEIGHT as u8);
+
+        self.registers[0xF] = 0;
+
+        for row in 0..height {
+            let spriteByte = self.memory[(self.index + (row as u16)) as usize];
+
+            for col in 0..8 {
+                let spritePixel = spriteByte & (0x80 >> col);
+                let mut screenPixel = self.video[(((yPos + row) as u32) * VIDEO_WIDTH + ((xPos + col) as u32)) as usize];
+
+                if spritePixel != 0 {
+                    if screenPixel == 0xFFFFFFFF {
+                        self.registers[0xF] = 1;
+                    }
+
+                    screenPixel ^= 0xFFFFFFFF;
+                }
+            }
+        }
+    }
 }
 
 fn main() {
