@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::Read;
+use rand::Rng;
 
 // Chip8’s memory from 0x000 to 0x1FF is reserved, so the ROM instructions must start at 0x200
 const START_ADDRESS: u16 = 0x200;
@@ -307,6 +308,19 @@ impl Chip8 {
 
         self.pc = (self.registers[0] as u16) + address;
     }
+
+    // Cxkk - RND Vx, byte: Set Vx = random byte AND kk
+    fn op_Cxkk(&mut self) {
+        let mut rng = rand::thread_rng();
+        
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let byte = (self.opcode & 0x00FF) as u8;
+
+        let vx_idx = Vx as usize;
+
+        self.registers[vx_idx] = rng.gen::<u8>() & byte;
+    }
+
 }
 
 fn main() {
