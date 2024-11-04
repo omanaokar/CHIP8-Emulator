@@ -281,6 +281,18 @@ impl Chip8 {
         self.registers[vx_idx] <<= 1;
     }
 
+    // 9xy0 - SNE Vx, Vy: Skip next instruction if Vx != Vy
+    fn op_9xy0(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        if self.registers[vx_idx] != self.registers[vy_idx] {
+            self.pc += 2;
+        }
+    }
 }
 
 fn main() {
