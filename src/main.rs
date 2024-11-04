@@ -446,7 +446,15 @@ impl Chip8 {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
 
-        self.delay_timer = self.registers[]
+        self.delay_timer = self.registers[vx_idx];
+    }
+
+    // Fx18 - LD ST, Vx: Set sound timer = Vx
+    fn op_Fx18(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+
+        self.sound_timer = self.registers[vx_idx];
     }
 }
 
