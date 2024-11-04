@@ -356,6 +356,34 @@ impl Chip8 {
             }
         }
     }
+
+    // Ex9E - SKP Vx: Skip next instruction if key with the value of Vx is pressed
+    fn op_Ex9E(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize; 
+
+        let key = self.registers[vx_idx];
+
+        let keypad: Option<u8> = Some(self.keypad[key as usize]);
+
+        if keypad.is_some() {
+            self.pc += 2;
+        }
+    }
+
+    // ExA1 - SKNP Vx: Skip next instruction if key with the value of Vx is not pressed
+    fn op_ExA1(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize; 
+
+        let key = self.registers[vx_idx];
+
+        let keypad: Option<u8> = Some(self.keypad[key as usize]);
+        
+        if keypad.is_none() {
+            self.pc += 2;
+        }
+    }
 }
 
 fn main() {
