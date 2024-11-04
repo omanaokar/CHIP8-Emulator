@@ -300,6 +300,13 @@ impl Chip8 {
 
         self.index = address;
     }
+
+    // Bnnn - JP V0, addr: Jump to location nnn + V0
+    fn op_Bnnnn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+
+        self.pc = (self.registers[0] as u16) + address;
+    }
 }
 
 fn main() {
