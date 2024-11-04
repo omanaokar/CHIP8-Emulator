@@ -210,6 +210,23 @@ impl Chip8 {
         self.registers[vx_idx] ^= self.registers[vy_idx];       
     }
 
+    // 8xy4 - ADD Vx, Vy: Set Vx = Vx + Vy, set VF = carry
+    fn op_8xy4(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        let sum = (self.registers[vx_idx] + self.registers[vy_idx]) as u16;
+
+        if sum > 255 {
+            self.registers[0xF] = 1;
+        } else {
+            self.registers[0xF] = 0;
+        }     
+        self.registers[vx_idx] = (sum & 0x00FF) as u8;
+    }
 }
 
 fn main() {
