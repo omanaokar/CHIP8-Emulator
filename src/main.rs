@@ -225,7 +225,28 @@ impl Chip8 {
         } else {
             self.registers[0xF] = 0;
         }     
-        self.registers[vx_idx] = (sum & 0x00FF) as u8;
+        self.registers[vx_idx] = (sum & 0xFF) as u8;
+    }
+
+    // 8xy5 - SUB Vx, Vy: Set Vx = Vx - Vy, set VF = NOT borrow
+    fn op_8xy5(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
+
+        let vx_idx = Vx as usize;
+        let vy_idx = Vy as usize;
+
+        if self.registers[vx_idx] > self.registers[vy_idx] {
+            self.registers[0xF] = 1;
+        } else {
+            self.registers[0xF] = 0;
+        }
+        self.registers[vx_idx] -= self.registers[vy_idx];
+    }
+
+    // 8xy6 - SHR Vx {, Vy}: Set Vx = Vx SHR 1
+    fn op_8xy6(&mut self) {
+        
     }
 }
 
