@@ -456,6 +456,43 @@ impl Chip8 {
 
         self.sound_timer = self.registers[vx_idx];
     }
+
+    // Fx1E - ADD I, Vx: Set I = I + Vx
+    fn op_Fx1E(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+
+        self.index += (self.registers[vx_idx]) as u16;
+    }
+
+    // Fx29 - LD F, Vx: Set I = location of sprite for digit Vx
+    fn op_Fx29(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+        let digit = self.registers[vx_idx];
+
+        self.index = (FONTSET_START_ADDRESS + (5 * digit)) as u16;
+    }
+
+    // Fx33 - LD B, Vx: Store BCD representation of Vx in memory locations I, I+1, and I+2
+    fn op_Fx33(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+        let mut value = self.registers[vx_idx];
+
+        // Ones place
+        self.memory[(self.index + 2) as usize] = value % 10;
+        value /= 10;
+
+        // Tens place
+        self.memory[(self.index + 1) as usize] = value % 10;
+        value /= 10;
+
+        // Hundreds Place
+        self.memory[self.index as usize] = value % 10;
+    }
+
+
 }
 
 fn main() {
