@@ -392,6 +392,62 @@ impl Chip8 {
 
         self.registers[vx_idx] = self.delay_timer;
     }
+
+    // Fx0A - LD Vx, K: Wait for a key press, store the value of the key in Vx.
+    fn op_Fx0A(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize; 
+
+        let mut keypad: [Option<u8>; 16] = [Some(0); 16];
+
+        for i in 0..16 {
+            keypad[i as usize] = Some(self.keypad[i as usize]);
+        }
+
+        if keypad[0].is_some() {
+            self.registers[vx_idx] = 0;
+        } else if keypad[1].is_some() {
+            self.registers[vx_idx] = 1;
+        } else if keypad[2].is_some() {
+            self.registers[vx_idx] = 2;
+        } else if keypad[3].is_some() {
+            self.registers[vx_idx] = 3;
+        } else if keypad[4].is_some() {
+            self.registers[vx_idx] = 4;
+        } else if keypad[5].is_some() {
+            self.registers[vx_idx] = 5;
+        } else if keypad[6].is_some() {
+            self.registers[vx_idx] = 6;
+        } else if keypad[7].is_some() {
+            self.registers[vx_idx] = 7;
+        } else if keypad[8].is_some() {
+            self.registers[vx_idx] = 8;
+        } else if keypad[9].is_some() {
+            self.registers[vx_idx] = 9;
+        } else if keypad[10].is_some() {
+            self.registers[vx_idx] = 10;
+        } else if keypad[11].is_some() {
+            self.registers[vx_idx] = 11;
+        } else if keypad[12].is_some() {
+            self.registers[vx_idx] = 12;
+        } else if keypad[13].is_some() {
+            self.registers[vx_idx] = 13;
+        } else if keypad[14].is_some() {
+            self.registers[vx_idx] = 14;
+        } else if keypad[15].is_some() {
+            self.registers[vx_idx] = 15;
+        } else {
+            self.pc -= 2;
+        }
+    }
+
+    // Fx15 - LD DT, Vx: Set delay timer = Vx
+    fn op_Fx15(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+
+        self.delay_timer = self.registers[]
+    }
 }
 
 fn main() {
