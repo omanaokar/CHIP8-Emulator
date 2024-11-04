@@ -384,6 +384,14 @@ impl Chip8 {
             self.pc += 2;
         }
     }
+
+    // Fx07 - LD Vx, DT: Set Vx = delay timer value.
+    fn op_Fx07(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize; 
+
+        self.registers[vx_idx] = self.delay_timer;
+    }
 }
 
 fn main() {
