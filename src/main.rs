@@ -492,6 +492,23 @@ impl Chip8 {
         self.memory[self.index as usize] = value % 10;
     }
 
+    // Fx55 - LD [I], Vx: Store registers V0 through Vx in memory starting at location I
+    fn op_Fx55(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+
+        for i in 0..Vx {
+            self.memory[(self.index + i as u16) as usize] = self.registers[i as usize];
+        }
+    }
+
+    // Fx65 - LD Vx, [I]: Read registers V0 through Vx from memory starting at location I
+    fn op_Fx65(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+
+        for i in 0..Vx {
+            self.registers[i as usize] = self.memory[(self.index + i as u16) as usize];
+        }
+    }
 
 }
 
