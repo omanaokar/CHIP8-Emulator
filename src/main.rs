@@ -293,6 +293,13 @@ impl Chip8 {
             self.pc += 2;
         }
     }
+
+    // Annn - LD I, addr: Set I = nnn
+    fn op_Annn(&mut self) {
+        let address = self.opcode & 0x0FFF;
+
+        self.index = address;
+    }
 }
 
 fn main() {
