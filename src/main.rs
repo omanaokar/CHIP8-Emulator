@@ -271,6 +271,16 @@ impl Chip8 {
         self.registers[vx_idx] = self.registers[vy_idx] - self.registers[vx_idx];
     }
 
+    // 8xyE - SHL Vx: Set Vx = Vx SHL 1
+    fn op_8xyE(&mut self) {
+        let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
+        let vx_idx = Vx as usize;
+
+        self.registers[0xF] = (self.registers[vx_idx] & 0x80) >> 7;
+
+        self.registers[vx_idx] <<= 1;
+    }
+
 }
 
 fn main() {
