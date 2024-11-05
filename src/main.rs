@@ -1,6 +1,19 @@
+extern crate sdl2;
+
 use std::fs::File;
 use std::io::Read;
+use std::env;
+use std::process;
 use rand::Rng;
+
+use sdl2::event::Event;
+use sdl2::keyboard::Keycode;
+use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::render::{Canvas, Texture, TextureAccess};
+use sdl2::video::Window;
+use sdl2::Sdl;
+use std::time::Duration;
+
 
 // Chip8’s memory from 0x000 to 0x1FF is reserved, so the ROM instructions must start at 0x200
 const START_ADDRESS: u16 = 0x200;
@@ -275,7 +288,7 @@ impl Chip8 {
     }
 
     // 8xyE - SHL Vx: Set Vx = Vx SHL 1
-    fn op_8xyE(&mut self) {
+    fn op_8xye(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
 
@@ -298,21 +311,21 @@ impl Chip8 {
     }
 
     // Annn - LD I, addr: Set I = nnn
-    fn op_Annn(&mut self) {
+    fn op_annn(&mut self) {
         let address = self.opcode & 0x0FFF;
 
         self.index = address;
     }
 
     // Bnnn - JP V0, addr: Jump to location nnn + V0
-    fn op_Bnnnn(&mut self) {
+    fn op_bnnnn(&mut self) {
         let address = self.opcode & 0x0FFF;
 
         self.pc = (self.registers[0] as u16) + address;
     }
 
     // Cxkk - RND Vx, byte: Set Vx = random byte AND kk
-    fn op_Cxkk(&mut self) {
+    fn op_cxkk(&mut self) {
         let mut rng = rand::thread_rng();
         
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
@@ -324,7 +337,7 @@ impl Chip8 {
     }
 
     // Dxyn - DRW Vx, Vy, nibble: Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision
-    fn op_Dxyn(&mut self) {
+    fn op_dxyn(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let Vy = ((self.opcode & 0x00F0) >> 4) as u8;
         let height = (self.opcode & 0x000F) as u8;
@@ -358,7 +371,7 @@ impl Chip8 {
     }
 
     // Ex9E - SKP Vx: Skip next instruction if key with the value of Vx is pressed
-    fn op_Ex9E(&mut self) {
+    fn op_ex9e(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize; 
 
@@ -372,7 +385,7 @@ impl Chip8 {
     }
 
     // ExA1 - SKNP Vx: Skip next instruction if key with the value of Vx is not pressed
-    fn op_ExA1(&mut self) {
+    fn op_exa1(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize; 
 
@@ -386,7 +399,7 @@ impl Chip8 {
     }
 
     // Fx07 - LD Vx, DT: Set Vx = delay timer value.
-    fn op_Fx07(&mut self) {
+    fn op_fx07(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize; 
 
@@ -394,7 +407,7 @@ impl Chip8 {
     }
 
     // Fx0A - LD Vx, K: Wait for a key press, store the value of the key in Vx.
-    fn op_Fx0A(&mut self) {
+    fn op_fx0a(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize; 
 
@@ -442,7 +455,7 @@ impl Chip8 {
     }
 
     // Fx15 - LD DT, Vx: Set delay timer = Vx
-    fn op_Fx15(&mut self) {
+    fn op_fx15(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
 
@@ -450,7 +463,7 @@ impl Chip8 {
     }
 
     // Fx18 - LD ST, Vx: Set sound timer = Vx
-    fn op_Fx18(&mut self) {
+    fn op_fx18(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
 
@@ -458,7 +471,7 @@ impl Chip8 {
     }
 
     // Fx1E - ADD I, Vx: Set I = I + Vx
-    fn op_Fx1E(&mut self) {
+    fn op_fx1e(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
 
@@ -466,7 +479,7 @@ impl Chip8 {
     }
 
     // Fx29 - LD F, Vx: Set I = location of sprite for digit Vx
-    fn op_Fx29(&mut self) {
+    fn op_fx29(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
         let digit = self.registers[vx_idx];
@@ -475,7 +488,7 @@ impl Chip8 {
     }
 
     // Fx33 - LD B, Vx: Store BCD representation of Vx in memory locations I, I+1, and I+2
-    fn op_Fx33(&mut self) {
+    fn op_fx33(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
         let vx_idx = Vx as usize;
         let mut value = self.registers[vx_idx];
@@ -493,7 +506,7 @@ impl Chip8 {
     }
 
     // Fx55 - LD [I], Vx: Store registers V0 through Vx in memory starting at location I
-    fn op_Fx55(&mut self) {
+    fn op_fx55(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
 
         for i in 0..Vx {
@@ -502,7 +515,7 @@ impl Chip8 {
     }
 
     // Fx65 - LD Vx, [I]: Read registers V0 through Vx from memory starting at location I
-    fn op_Fx65(&mut self) {
+    fn op_fx65(&mut self) {
         let Vx = ((self.opcode & 0x0F00) >> 8) as u8;
 
         for i in 0..Vx {
@@ -510,8 +523,201 @@ impl Chip8 {
         }
     }
 
+    // NULL : function that does nothing, but will be the default function called if a proper function pointer is not set
+    fn op_null(&mut self) {
+        
+    }
+}
+
+impl Chip8 {
+    fn cycle(&mut self) {
+
+        // Fetch
+        let opcode = (self.memory[self.pc as usize] << 8) | self.memory[(self.pc+1) as usize];
+
+        // Increment program counter 
+        self.pc += 2;
+
+        // Decode and Execute
+        match opcode {
+            0x0 => {
+                match opcode & 0x000F {
+                    0x0 => self.op_00e0(),
+                    0xE => self.op_00ee(),
+                    _ => self.op_null(),
+                }
+            },
+            0x1 => self.op_1nnn(),
+            0x2 => self.op_2nnn(),
+            0x3 => self.op_3xkk(),
+            0x4 => self.op_4xkk(),
+            0x5 => self.op_5xy0(),
+            0x6 => self.op_6xkk(),
+            0x7 => self.op_7xkk(),
+            0x8 => {
+                match opcode & 0x000F  {
+                    0x0 => self.op_8xy0(),
+                    0x1 => self.op_8xy1(),
+                    0x2 => self.op_8xy2(),
+                    0x3 => self.op_8xy3(),
+                    0x4 => self.op_8xy4(),
+                    0x5 => self.op_8xy5(),
+                    0x6 => self.op_8xy6(),
+                    0x7 => self.op_8xy7(),
+                    0xE => self.op_8xye(),
+                    _ => self.op_null(),
+                }
+            },
+            0x9 => self.op_9xy0(),
+            0xA => self.op_annn(),
+            0xB => self.op_bnnnn(),
+            0xC => self.op_cxkk(),
+            0xD => self.op_dxyn(),
+            0xE => {
+                match opcode & 0x000F {
+                    0x1 => self.op_exa1(),
+                    0xE => self.op_ex9e(),
+                    _ => self.op_null(),
+                }
+            },
+            0xF => {
+                match opcode & 0x00FF {
+                    0x07 => self.op_fx07(),
+                    0x0A => self.op_fx0a(),
+                    0x15 => self.op_fx15(),
+                    0x18 => self.op_fx18(),
+                    0x1E => self.op_fx1e(),
+                    0x29 => self.op_fx29(),
+                    0x33 => self.op_fx33(),
+                    0x55 => self.op_fx55(),
+                    0x65 => self.op_fx65(),
+                    _ => self.op_null(),
+                }
+            },
+            _ => self.op_null()
+        }
+
+        // Decrement the delay timer if it's been set
+        if self.delay_timer > 0 {
+            self.delay_timer -= 1;
+        }
+
+        // Decrement the sound timer if it's been set
+        if self.sound_timer > 0 {
+            self.sound_timer -= 1;
+        }
+    }
+}
+
+struct Platform<'a> {
+    canvas: Canvas<Window>,
+    texture: Texture<'a>,
+}
+
+impl<'a> Platform<'a> {
+    fn platform(title: &str, window_width: u32, window_height: u32, texture_width: u32, texture_height: u32){
+        let sdl_context = sdl2::init().unwrap();
+
+        let window = sdl_context
+            .video()
+            .unwrap()
+            .window(title, window_width, window_height)
+            .position_centered()
+            .build()
+            .unwrap();
+
+        let mut canvas = window.into_canvas()
+            .accelerated() 
+            .build()
+            .unwrap();
+
+            let texture_creator =  canvas.texture_creator();
+
+            let texture = texture_creator.create_texture_target(PixelFormatEnum::RGBA8888, texture_width, texture_height);
+    }
+
+    fn update(canvas: &mut Canvas<Window>, texture: &mut Texture, buffer: &[u8], pitch: usize) {
+
+        texture.update(None, buffer, pitch).expect("Failed to update texture");
+
+        canvas.clear();
+
+        canvas.copy(texture, None, None).expect("Failed to copy texture to renderer");
+
+        canvas.present();
+    }
+
+    fn process_input(mut keys: [u8; 16]) -> bool {
+        let sdl_context = sdl2::init().unwrap();
+        let mut event_pump = sdl_context.event_pump().unwrap();
+        let mut quit = false;
+
+        for event in event_pump.poll_iter() {
+            match event {
+                Event::Quit {..} => {
+                    quit = true;
+                }
+                Event::KeyDown { keycode: Some(key), .. } => {
+                    match key {
+                        Keycode::Escape => {
+                            quit = true;
+                        }
+                        Keycode::X => keys[0] = 1,
+                        Keycode::Num1 => keys[1] = 1,
+                        Keycode::Num2 => keys[2] = 1,
+                        Keycode::Num3 => keys[3] = 1,
+                        Keycode::Q => keys[4] = 1,
+                        Keycode::W => keys[5] = 1,
+                        Keycode::E => keys[6] = 1,
+                        Keycode::A => keys[7] = 1,
+                        Keycode::S => keys[8] = 1,
+                        Keycode::D => keys[9] = 1,
+                        Keycode::Z => keys[0xA] = 1,
+                        Keycode::C => keys[0xB] = 1,
+                        Keycode::Num4 => keys[0xC] = 1,
+                        Keycode::R => keys[0xD] = 1,
+                        Keycode::F => keys[0xE] = 1,
+                        Keycode::V => keys[0xF] = 1,
+                        _ => {}
+                    }
+                }
+                Event::KeyUp { keycode: Some(key), .. } => {
+                    match key {
+                        Keycode::X => keys[0] = 0,
+                        Keycode::Num1 => keys[1] = 0,
+                        Keycode::Num2 => keys[2] = 0,
+                        Keycode::Num3 => keys[3] = 0,
+                        Keycode::Q => keys[4] = 0,
+                        Keycode::W => keys[5] = 0,
+                        Keycode::E => keys[6] = 0,
+                        Keycode::A => keys[7] = 0,
+                        Keycode::S => keys[8] = 0,
+                        Keycode::D => keys[9] = 0,
+                        Keycode::Z => keys[0xA] = 0,
+                        Keycode::C => keys[0xB] = 0,
+                        Keycode::Num4 => keys[0xC] = 0,
+                        Keycode::R => keys[0xD] = 0,
+                        Keycode::F => keys[0xE] = 0,
+                        Keycode::V => keys[0xF] = 0,
+                        _ => {}
+                    }
+                }
+                _ => {}    
+            }
+        }
+
+        quit
+    }
 }
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() != 4 {
+        eprintln!("Usage: {} <Scale> <Delay> <ROM>\n", args[0]);
+        process::exit(1);
+    }
+
+    let video_scale: = args[1].parse::<i32>;
 
 }
