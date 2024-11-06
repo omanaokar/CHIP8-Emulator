@@ -4,13 +4,19 @@ use std::fs::File;
 use std::io::Read;
 use std::env;
 use std::process;
+use std::mem;
+use std::rc::Rc;
+use std::time::Instant;
 use rand::Rng;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::pixels::{Color, PixelFormatEnum};
+use sdl2::render::TextureCreator;
 use sdl2::render::{Canvas, Texture, TextureAccess};
+use sdl2::video;
 use sdl2::video::Window;
+use sdl2::video::WindowContext;
 use sdl2::Sdl;
 use std::time::Duration;
 
@@ -533,7 +539,7 @@ impl Chip8 {
     fn cycle(&mut self) {
 
         // Fetch
-        let opcode = (self.memory[self.pc as usize] << 8) | self.memory[(self.pc+1) as usize];
+        let opcode: u16 = ((self.memory[self.pc as usize] as u16) << 8) | (self.memory[(self.pc+1) as usize] as u16);
 
         // Increment program counter 
         self.pc += 2;
@@ -615,40 +621,29 @@ struct Platform<'a> {
 }
 
 impl<'a> Platform<'a> {
-    fn platform(title: &str, window_width: u32, window_height: u32, texture_width: u32, texture_height: u32){
-        let sdl_context = sdl2::init().unwrap();
-
-        let window = sdl_context
-            .video()
-            .unwrap()
-            .window(title, window_width, window_height)
-            .position_centered()
-            .build()
-            .unwrap();
-
-        let mut canvas = window.into_canvas()
-            .accelerated() 
-            .build()
-            .unwrap();
-
-            let texture_creator =  canvas.texture_creator();
-
-            let texture = texture_creator.create_texture_target(PixelFormatEnum::RGBA8888, texture_width, texture_height);
+    fn new(canvas: Canvas<Window>, texture: Texture<'a>) -> Result<Self, String> {
+        // Return platform instance
+        Ok(Platform { 
+            canvas,
+            texture,
+        })
     }
 
-    fn update(canvas: &mut Canvas<Window>, texture: &mut Texture, buffer: &[u8], pitch: usize) {
+    fn update(&mut self, buffer: &[u8], pitch: usize) -> Result<(), String> {
+        // Update the texture with the buffer data
+        self.texture.update(None, buffer, pitch as usize)
+            .map_err(|e| e.to_string())?;
 
-        texture.update(None, buffer, pitch).expect("Failed to update texture");
+        // Clear the renderer, copy the texture, and present it to the screen
+        self.canvas.clear();
+        self.canvas.copy(&self.texture, None, None)
+            .map_err(|e| e.to_string())?;
+        self.canvas.present();
 
-        canvas.clear();
-
-        canvas.copy(texture, None, None).expect("Failed to copy texture to renderer");
-
-        canvas.present();
+        Ok(())
     }
 
-    fn process_input(mut keys: [u8; 16]) -> bool {
-        let sdl_context = sdl2::init().unwrap();
+    fn process_input(&mut self, sdl_context: &Sdl, mut keys: [u8; 16]) -> bool {
         let mut event_pump = sdl_context.event_pump().unwrap();
         let mut quit = false;
 
@@ -718,6 +713,83 @@ fn main() {
         process::exit(1);
     }
 
-    let video_scale: = args[1].parse::<i32>;
+    let mut video_scale: u32;
+    let mut cycle_delay: u32;
+    let mut rom_file_name = args[3].clone();
+
+    match args[1].parse::<u32>() {
+        Ok(num) => {
+            video_scale = num;
+        },
+        Err(_) => {
+            eprintln!("This argument is not integer!");
+            process::exit(1);
+        }
+    };
+
+    match args[2].parse::<u32>() {
+        Ok(num) => {
+            cycle_delay = num;
+        },
+        Err(_) => {
+            eprintln!("This argument is not integer!");
+            process::exit(1);
+        }
+    };
+
+    let sdl_context = sdl2::init().map_err(|e| e.to_string()).unwrap();
+
+    // Create window
+    let window = sdl_context
+        .video()
+        .map_err(|e| e.to_string()).unwrap()
+        .window("CHIP-8 Emulator", VIDEO_WIDTH * video_scale, VIDEO_HEIGHT * video_scale)
+        .position_centered()
+        .build()
+        .map_err(|e| e.to_string()).unwrap();
+
+    let canvas = window.into_canvas()
+        .accelerated()
+        .build()
+        .map_err(|e| e.to_string()).unwrap();
+
+    let texture_creator = canvas.texture_creator();
+    let texture = texture_creator
+        .create_texture_target(
+        PixelFormatEnum::RGBA8888,
+        VIDEO_WIDTH,
+        VIDEO_HEIGHT,
+    ).map_err(|e| e.to_string()).unwrap();
+
+    let mut pltf = Platform::new(canvas, texture).unwrap();
+
+    let mut chip8 = Chip8::new();
+    chip8.load_rom(&rom_file_name);
+
+    let video_pitch = (mem::size_of::<u32>()) * (VIDEO_WIDTH as usize);
+
+    let mut last_cycle_time = Instant::now();
+    let mut quit = false;
+
+    while !quit {
+        quit = pltf.process_input(&sdl_context, chip8.keypad);
+
+        let current_time = Instant::now();
+        let duration = current_time.duration_since(last_cycle_time);
+        let dt = duration.as_secs_f32() * 1000.0;
+
+        if dt > (cycle_delay as f32) {
+            last_cycle_time = current_time;
+            chip8.cycle();
+            let buffer: &[u8] = unsafe {
+                // We cast the pointer to a u32 array to a u8 slice, ensuring we get the correct byte representation
+                std::slice::from_raw_parts(
+                    chip8.video.as_ptr() as *const u8, 
+                    chip8.video.len() * std::mem::size_of::<u32>()
+                )
+            };
+            pltf.update(buffer, video_pitch).expect("Error updating");
+        }
+    }
 
 }
